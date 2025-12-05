@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mv:*)",
+      "Bash(git config:*)",
+      "Bash(for repo in ~/Code/*/)",
+      "Bash(git -C:*)",
+      "Bash(git -C \"$repo\" config --local user.email)",
+      "Bash(done)",
+      "Bash(cat:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

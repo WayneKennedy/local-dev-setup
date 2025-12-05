@@ -1,0 +1,7 @@
+# Backup files created by install.sh
+*.backup.*
+
+# Never commit secrets
+settings.json
+.credentials.json
+.env
