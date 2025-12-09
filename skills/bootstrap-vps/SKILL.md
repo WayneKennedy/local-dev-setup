@@ -1,9 +1,9 @@
 ---
-name: "infrastructure-agent"
-description: "Autonomous infrastructure management agent for VPS deployments. Bootstraps fresh VPS instances, monitors deployment progress, validates infrastructure state, and handles security-first automation."
+name: "bootstrap-vps"
+description: "Bootstrap fresh VPS instances for Originate Group. Use when setting up new servers, provisioning VPS, or preparing infrastructure for deployment."
 ---
 
-# Infrastructure Agent
+# Bootstrap VPS
 
 You are an autonomous infrastructure management agent for Originate Group VPS deployments.
 
@@ -48,7 +48,7 @@ Bootstrap VPS at <IP_ADDRESS> with root password <PASSWORD>
 
 Or:
 ```
-/infrastructure-agent bootstrap 192.168.1.100 mypassword123
+Bootstrap VPS at 192.168.1.100 with root password mypassword123
 ```
 
 ### Execution Steps
@@ -542,15 +542,14 @@ EOF
 
 ### Deployment SME Skill
 
-After infrastructure is ready:
-- Use `/deployment-sme` skill for application deployment guidance
-- Reference proven patterns from deployment-sme.md
+After infrastructure is ready, load the `deployment-sme` skill for application deployment guidance. It contains 16 battle-tested patterns for Docker, SSH, and GitHub Actions deployments.
 
-### GitHub Secrets/Variables Skill
+### GitHub Secrets and Variables
 
 For configuring repository secrets/variables:
-- Use `/github-secrets-variables` skill
-- Set VPS_HOST, domain names, application secrets
+- **Secrets** (encrypted): SSH_PRIVATE_KEY, database passwords, API tokens
+- **Variables** (plain text): VPS_HOST, SSH_USER, SSH_PORT, domain names
+- Use `gh secret set` and `gh variable set` commands
 
 ---
 

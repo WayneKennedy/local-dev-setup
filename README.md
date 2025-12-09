@@ -12,7 +12,8 @@ Personal configuration for [Claude Code CLI](https://docs.anthropic.com/en/docs/
 
 ## What's NOT Included
 
-- `settings.json` - Contains MCP server API keys (configure per-machine)
+- `~/.claude.json` - MCP server configs with API keys (configure per-machine via `claude mcp add`)
+- `~/.claude/settings.json` - Machine-specific settings like `alwaysThinkingEnabled`
 - `.credentials.json` - Auth tokens (machine-specific)
 - History, todos, debug logs - Ephemeral data
 

@@ -620,7 +620,7 @@ jobs:
 - Domain names
 - Port numbers
 
-**Reference**: Use `/github-secrets-variables` skill for comprehensive guidance.
+**Tip**: Sensitive values (passwords, tokens) go in Secrets; non-sensitive config (hostnames, ports) go in Variables.
 
 ### Pre-Deployment Verification
 

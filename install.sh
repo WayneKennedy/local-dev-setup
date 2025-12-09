@@ -15,7 +15,7 @@ echo ""
 mkdir -p ~/.claude
 
 # Items to symlink (safe, no secrets)
-ITEMS="CLAUDE.md skills settings.local.json"
+ITEMS="CLAUDE.md skills settings.local.json settings.json commands hooks"
 
 for item in $ITEMS; do
     target="$HOME/.claude/$item"

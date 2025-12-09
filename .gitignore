@@ -2,6 +2,5 @@
 *.backup.*
 
 # Never commit secrets
-settings.json
 .credentials.json
 .env
