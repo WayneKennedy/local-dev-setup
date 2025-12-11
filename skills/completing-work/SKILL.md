@@ -13,6 +13,27 @@ description: >
 
 Tests are GREEN. Implementation is functionally complete. Complete documentation, transition to implemented, and proceed to validation.
 
+## Session Context
+
+This skill expects:
+- Work Item context from a resumed session (after implementation), OR
+- Explicit invocation: "Load skill completing-work for CR-042"
+
+If no Work Item context is available, ask for the Work Item ID before proceeding.
+
+**If this is a retry (work item was previously blocked at this gate):**
+- Check `blocking_context.gate` - if it was "completing-work", review what failed
+- Focus extra attention on the previously-blocked condition
+- Check `blocking_context.previous_blocks` for recurring patterns
+
+## Step 1: Verify Work Item Status
+
+```
+get_work_item(work_item_id='<CR-ID>')
+```
+
+Confirm status is `in_progress`. If not, this skill was invoked out of order.
+
 ## Completion Checklist
 
 Before transitioning to `implemented`, ALL of the following must be done:
@@ -24,7 +45,7 @@ Before transitioning to `implemented`, ALL of the following must be done:
 - [ ] All tests passing
 - [ ] Work item updated with implementation refs
 
-## Step 1: Create Implementation Notes
+## Step 2: Create Implementation Notes
 
 For each affected requirement, create an `imp` artifact documenting key decisions:
 
@@ -77,7 +98,7 @@ Used JWT tokens with refresh token rotation for session management.
 - Token revocation requires Redis (not implemented, see PROJ-FEAT-089)
 ```
 
-## Step 2: Update LDM (If Data Model Changed)
+## Step 3: Update LDM (If Data Model Changed)
 
 If you added or modified data structures:
 
@@ -105,7 +126,7 @@ update_requirement(requirement_id='<LDM-ID>', content='...')
 - Relationships between entities
 - Validation rules
 
-## Step 3: Update Interfaces (If APIs Changed)
+## Step 4: Update Interfaces (If APIs Changed)
 
 If you added or modified APIs:
 
@@ -127,7 +148,7 @@ create_requirement(content='...', type='interface', project_id='<project>')
 - Error responses
 - Rate limits
 
-## Step 4: Add Semantic Tags
+## Step 5: Add Semantic Tags
 
 Update affected requirements with relationship tags:
 
@@ -145,7 +166,7 @@ get_requirement(requirement_id='<REQ-ID>')
 update_requirement(requirement_id='<REQ-ID>', content='<updated content with tags>')
 ```
 
-## Step 5: Update Work Item with Implementation Refs
+## Step 6: Update Work Item with Implementation Refs
 
 ```
 update_work_item(
@@ -158,7 +179,7 @@ update_work_item(
 )
 ```
 
-## Step 6: Final Verification
+## Step 7: Final Verification
 
 Run full test suite one more time:
 ```bash
@@ -173,7 +194,7 @@ go test ./...
 - Linting passes
 - Type checking passes (if applicable)
 
-## Step 7: Transition to Implemented
+## Step 8: Transition to Implemented
 
 Only after ALL checklist items are complete:
 
@@ -199,10 +220,7 @@ transition_work_item(work_item_id='<CR-ID>', new_status='implemented')
 - Commits: <shas>
 
 ### Test Status
-✅ All tests passing
-
-### Status
-Work item transitioned to `implemented`
+All tests passing
 ```
 
 ## Blocking (STOP)
@@ -210,6 +228,30 @@ Work item transitioned to `implemented`
 - Tests now failing (regression introduced)
 - Cannot determine what was implemented (shouldn't happen)
 - MCP tools failing repeatedly
+
+If blocked, transition work item:
+
+```
+transition_work_item(
+  work_item_id='<CR-ID>',
+  new_status='blocked',
+  blocking_context={
+    "gate": "completing-work",
+    "reason": "<short reason>",
+    "details": {
+      "missing_artifact": "imp|ldm|interface",
+      "issue": "<why it cannot be created>"
+    }
+  }
+)
+```
+
+**Output:**
+```
+[GATE_FAIL: completing-work] <reason>
+```
+
+Then STOP. A Task will be automatically created to notify the appropriate human.
 
 ## Non-Blocking (PROCEED)
 
@@ -223,5 +265,10 @@ Work item transitioned to `implemented`
 After documentation is complete:
 1. Transition to `implemented`
 2. Proceed immediately to validation phase
+
+**Output:**
+```
+[GATE_PASS: completing-work]
+```
 
 **Do NOT wait for confirmation.**

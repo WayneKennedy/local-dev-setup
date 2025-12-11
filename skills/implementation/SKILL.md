@@ -12,13 +12,34 @@ description: >
 
 Tests are RED. Now write the minimum code to make them GREEN. Implement and proceed to completing-work unless blocked.
 
+## Session Context
+
+This skill expects:
+- Work Item context from a resumed session (after test-readiness), OR
+- Explicit invocation: "Load skill implementation for CR-042"
+
+If no Work Item context is available, ask for the Work Item ID before proceeding.
+
+**If this is a retry (work item was previously blocked at this gate):**
+- Check `blocking_context.gate` - if it was "implementation", review what failed
+- Focus extra attention on the previously-blocked condition
+- Check `blocking_context.previous_blocks` for recurring patterns
+
+## Step 1: Verify Work Item Status
+
+```
+get_work_item(work_item_id='<CR-ID>')
+```
+
+Confirm status is `in_progress`. If not, this skill was invoked out of order.
+
 ## The Green Phase
 
 **Goal:** Make failing tests pass with the simplest implementation.
 
 **Not the goal:** Write perfect, fully-featured code on first pass.
 
-## Step 1: Pick One Failing Test
+## Step 2: Pick One Failing Test
 
 Don't try to make all tests pass at once.
 
@@ -28,7 +49,7 @@ Don't try to make all tests pass at once.
 4. Run tests, verify GREEN
 5. Move to next failing test
 
-## Step 2: Write Minimum Code
+## Step 3: Write Minimum Code
 
 **YAGNI - You Aren't Gonna Need It**
 
@@ -42,7 +63,7 @@ Only implement what's needed for the current test. Do not:
 - Is there a test requiring it?
 - If no test, you don't need it yet
 
-## Step 3: Run Tests Frequently
+## Step 4: Run Tests Frequently
 
 After every small change:
 
@@ -58,29 +79,29 @@ go test ./... -failfast
 - See result
 - Adjust
 
-## Step 4: One Test at a Time
+## Step 5: One Test at a Time
 
 ```
-🔴 test_a - FAIL
-🔴 test_b - FAIL  
-🔴 test_c - FAIL
+test_a - FAIL
+test_b - FAIL
+test_c - FAIL
 
 [Write code for test_a]
 
-🟢 test_a - PASS
-🔴 test_b - FAIL
-🔴 test_c - FAIL
+test_a - PASS
+test_b - FAIL
+test_c - FAIL
 
 [Write code for test_b]
 
-🟢 test_a - PASS
-🟢 test_b - PASS
-🔴 test_c - FAIL
+test_a - PASS
+test_b - PASS
+test_c - FAIL
 
 [Continue until all green]
 ```
 
-## Step 5: Refactor (Only When Green)
+## Step 6: Refactor (Only When Green)
 
 Once tests pass, you may refactor:
 
@@ -106,10 +127,10 @@ As you implement:
 ## Implementation Progress: <CR-ID>
 
 ### Test Status
-- 🟢 test_user_creates_account (PASS)
-- 🟢 test_user_receives_welcome_email (PASS)
-- 🔴 test_user_can_reset_password (FAIL) ← working on this
-- 🔴 test_password_reset_expires (FAIL)
+- test_user_creates_account (PASS)
+- test_user_receives_welcome_email (PASS)
+- test_user_can_reset_password (FAIL) <- working on this
+- test_password_reset_expires (FAIL)
 
 ### Files Changed
 - src/auth/user.py - Added create_account()
@@ -139,9 +160,34 @@ As you implement:
 
 ## Blocking (STOP)
 
-- Test won't pass after 3 fix attempts (ask for help)
+- Test won't pass after 3 fix attempts
 - Fundamental design question with no clear answer
 - Security concern requiring explicit authorization
+
+If blocked, transition work item:
+
+```
+transition_work_item(
+  work_item_id='<CR-ID>',
+  new_status='blocked',
+  blocking_context={
+    "gate": "implementation",
+    "reason": "<short reason>",
+    "details": {
+      "test_name": "<test>",
+      "failure_reason": "<why it can't pass>",
+      "issue": "<what's blocking>"
+    }
+  }
+)
+```
+
+**Output:**
+```
+[GATE_FAIL: implementation] <reason>
+```
+
+Then STOP. A Task will be automatically created to notify the appropriate human.
 
 ## Non-Blocking (PROCEED)
 
@@ -157,8 +203,15 @@ If a test won't pass:
 2. Debug to understand actual vs expected
 3. Fix and retry
 
-After 3 attempts, **STOP** and ask for help.
+After 3 attempts, **STOP** and transition to blocked.
 
 ## Completion
 
-All tests GREEN → Proceed immediately to completing-work phase. **Do NOT wait for confirmation.**
+All tests GREEN → Proceed immediately to completing-work phase.
+
+**Output:**
+```
+[GATE_PASS: implementation]
+```
+
+**Do NOT wait for confirmation.**

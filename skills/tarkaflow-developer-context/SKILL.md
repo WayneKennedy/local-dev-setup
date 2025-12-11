@@ -22,7 +22,6 @@ select_agent(agent_email='code@tarka.internal')
 
 **Agent identities and permissions:**
 - `code@tarka.internal` - Claude Code agent, can implement, transition to `review`, cannot approve
-- `developer@tarka.internal` - Can implement, transition to `review`, cannot approve
 - `tester@tarka.internal` - Can validate, transition to `validated`
 - `ea@tarka.internal` - Enterprise Architect, full permissions (Desktop only)
 
@@ -83,11 +82,11 @@ When completing work, add appropriate tags to requirements.
 ## Work Item Lifecycle
 
 ```
-CR created → in_progress → implemented → validated → deployed → completed
+CR created → approved → in_progress → implemented → validated → deployed → completed
 ```
 
 **Your transitions as developer:**
-- `created` → `in_progress` (starting work)
+- `approved` → `in_progress` (starting work)
 - `in_progress` → `implemented` (code complete, tests pass)
 
 **You cannot:**

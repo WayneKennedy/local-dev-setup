@@ -13,6 +13,27 @@ description: >
 
 Work items are `validated` and ready for deployment. Create release, deploy, and complete unless blocked.
 
+## Session Context
+
+This skill expects:
+- Work Item context from a resumed session (after validation), OR
+- Explicit invocation: "Load skill preparing-release for CR-042"
+
+If no Work Item context is available, ask for the Work Item ID before proceeding.
+
+**If this is a retry (work item was previously blocked at this gate):**
+- Check `blocking_context.gate` - if it was "preparing-release", review what failed
+- Focus extra attention on the previously-blocked condition
+- Check `blocking_context.previous_blocks` for recurring patterns
+
+## Agent Identity: Release Manager
+
+**IMPORTANT:** Release operations require the release manager agent identity.
+
+```
+select_agent(agent_email='release_manager@tarka.internal')
+```
+
 ## The Deployment Gate
 
 **You CANNOT deploy (push to main/production) without an approved Release.**
@@ -23,12 +44,19 @@ This is not a suggestion. The release provides:
 - Audit trail
 - Rollback reference
 
-## Step 1: Check for Existing Release
+## Step 1: Verify Work Item Status
 
 ```
-list_work_items(
+get_work_item(work_item_id='<CR-ID>')
+```
+
+Confirm status is `validated`. If not, this skill was invoked out of order.
+
+## Step 2: Check for Existing Release
+
+```
+list_releases(
   project_id='<project>',
-  work_item_type='release',
   status='approved'
 )
 ```
@@ -41,13 +69,12 @@ list_work_items(
 - Create a new release
 - Get it approved before deploying
 
-## Step 2: Create a Release (If Needed)
+## Step 3: Create a Release (If Needed)
 
 ```
-create_work_item(
+create_release(
   organization_id='<org>',
   project_id='<project>',
-  work_item_type='release',
   title='Release <version> - <summary>',
   description='<what this release includes>',
   includes=['<CR-ID-1>', '<CR-ID-2>']  # Work items in this release
@@ -63,13 +90,13 @@ create_work_item(
 - Tags do NOT create release membership
 - Add all validated work items that should deploy together
 
-## Step 3: Release Approval
+## Step 4: Release Approval
 
 The release must be approved before deployment.
 
 **Check release status:**
 ```
-get_work_item(work_item_id='<RELEASE-ID>')
+get_release(release_id='<RELEASE-ID>')
 ```
 
 **If not approved:**
@@ -77,7 +104,12 @@ get_work_item(work_item_id='<RELEASE-ID>')
 - Developer cannot approve releases (requires appropriate authority)
 - Wait for approval before proceeding
 
-## Step 4: Pre-Deployment Checks
+**Transition to approved (if authorized):**
+```
+transition_release(release_id='<RELEASE-ID>', new_status='approved')
+```
+
+## Step 5: Pre-Deployment Checks
 
 Before deploying, verify:
 
@@ -105,7 +137,7 @@ check_work_item_conflicts(work_item_id='<RELEASE-ID>')
 check_work_item_drift(work_item_id='<RELEASE-ID>')
 ```
 
-## Step 5: Deploy
+## Step 6: Deploy
 
 Only when:
 - Release is approved
@@ -118,22 +150,12 @@ Only when:
 git push origin main
 ```
 
-**Transition release to deployed:**
+**Transition release to completed (cascades to work items):**
 ```
-transition_work_item(work_item_id='<RELEASE-ID>', new_status='deployed')
-```
-
-This automatically transitions included work items to `deployed`.
-
-## Step 6: Complete Release
-
-After deployment is verified in production:
-
-```
-transition_work_item(work_item_id='<RELEASE-ID>', new_status='completed')
+transition_release(release_id='<RELEASE-ID>', new_status='completed')
 ```
 
-This cascades `completed` to all included work items that are `validated`.
+This automatically transitions included work items through `deployed` to `completed`.
 
 ## Release Checklist
 
@@ -150,34 +172,12 @@ This cascades `completed` to all included work items that are `validated`.
 
 ### Deployment
 - [ ] Code pushed to production
-- [ ] Release transitioned to `deployed`
+- [ ] Release transitioned to `completed`
 - [ ] Deployment verified in production
 
 ### Post-Deployment
-- [ ] Release transitioned to `completed`
 - [ ] All work items now `completed`
 ```
-
-## Common Issues
-
-**Work item not in release:**
-```
-update_work_item(
-  work_item_id='<RELEASE-ID>',
-  includes=['<existing>', '<new-CR-ID>']  # Add to includes
-)
-```
-
-**Release has conflicts:**
-- Review conflict report
-- Resolve in code
-- Re-validate affected work items
-- Re-check conflicts
-
-**Work item not validated:**
-- Cannot deploy unvalidated work
-- Return to validation phase
-- Or remove from release and deploy without it
 
 ## Blocking (STOP)
 
@@ -186,6 +186,30 @@ update_work_item(
 - Tests failing on deployment branch
 - Conflicts detected (must resolve first)
 - Deployment fails after 2 attempts
+
+If blocked, transition work item:
+
+```
+transition_work_item(
+  work_item_id='<CR-ID>',
+  new_status='blocked',
+  blocking_context={
+    "gate": "preparing-release",
+    "reason": "<short reason>",
+    "details": {
+      "release_id": "<RELEASE-ID>",
+      "issue": "<what's wrong>"
+    }
+  }
+)
+```
+
+**Output:**
+```
+[GATE_FAIL: preparing-release] <reason>
+```
+
+Then STOP. A Task will be automatically created to notify the appropriate human.
 
 ## Non-Blocking (PROCEED)
 
@@ -200,15 +224,19 @@ If deployment fails:
 2. Fix the issue
 3. Push again
 
-After 2 attempts, **STOP** and ask for help.
+After 2 attempts, **STOP** and transition to blocked.
 
 ## Completion
 
 After successful deployment:
-1. Transition release to `deployed`
+1. Transition release to `completed`
 2. Verify in production
-3. Transition to `completed`
-4. Report completion with summary
+3. Report completion with summary
+
+**Output:**
+```
+[GATE_PASS: preparing-release]
+```
 
 **Do NOT wait for confirmation at each step.**
 
