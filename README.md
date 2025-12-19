@@ -1,6 +1,6 @@
-# Claude Code Setup
+# Local Dev Setup
 
-Personal configuration for [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) - skills, global instructions, and permission settings.
+Personal configuration for local development environments - skills, global instructions, and permission settings for Claude Code CLI.
 
 ## What's Included
 
@@ -22,8 +22,8 @@ Personal configuration for [Claude Code CLI](https://docs.anthropic.com/en/docs/
 Clone and run the install script:
 
 ```bash
-git clone git@github.com:WayneKennedy/claude-code-setup.git
-cd claude-code-setup
+git clone git@github.com:WayneKennedy/local-dev-setup.git
+cd local-dev-setup
 ./install.sh
 ```
 
