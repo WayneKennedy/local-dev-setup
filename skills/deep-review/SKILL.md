@@ -110,7 +110,9 @@ For each work item (CR, bug, debt):
 
 #### Step 3.1: Create Report Structure
 
-Create the report at `{repo_root}/docs/DEEP-REVIEW-{YYYY-MM-DD}.md`
+Create the report at `{repo_root}/docs/DEEP-REVIEW-{PROJECT_SLUG}-{YYYY-MM-DD}.md`
+
+Where `{PROJECT_SLUG}` is the TarkaFlow project slug (e.g., TFLO, AOS, PLAT, INFRA) obtained from the project selected in Step 1.3.
 
 #### Step 3.2: Report Template
 
@@ -212,7 +214,7 @@ Complete list of work items checked.
 
 ### Phase 4: Finalize
 
-1. **Write Report**: Save the completed report to `/docs/`
+1. **Write Report**: Save the completed report to `/docs/DEEP-REVIEW-{PROJECT_SLUG}-{YYYY-MM-DD}.md`
 2. **Summarize**: Provide a brief verbal summary of key findings
 3. **Recommend Next Steps**: Suggest immediate actions based on critical findings
 
