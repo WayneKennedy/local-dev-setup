@@ -1,5 +1,7 @@
 # Global Context - Wayne's Profile
 
+> **TarkaFlow User:** `wayne@weareoriginate.com` (use this for user lookups, work item assignments, etc.)
+
 ## User Identity
 - **Name**: Wayne
 - **Background**: Veteran software engineer
