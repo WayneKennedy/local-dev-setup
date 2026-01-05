@@ -1,0 +1,3 @@
+#!/bin/bash
+# pipe - Tarka Pipeline tmux session
+cd ~/Code/tarka-pipeline && exec tmux new -As pipe
