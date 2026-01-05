@@ -7,6 +7,8 @@ description: "This skill should be used when the user asks to 'deep review', 'ga
 
 Perform a critical analysis of a repository's codebase against all active guardrails and all work items and requirements (open and completed/deployed) from TarkaFlow.
 
+**Key Feature**: Findings are recorded directly to TarkaFlow as a Governance Audit entity, enabling tracking, trending, and auto-remediation.
+
 ## Prerequisites
 
 Before starting a deep review:
@@ -26,12 +28,30 @@ Use: mcp__tflo__select_agent with agent_email='ea@tarka.internal'
 
 #### Step 1.2: Identify TarkaFlow Resources
 
-1. **List Organizations**: Use `mcp__tflo__list_organizations` to find the relevant org
-2. **List Projects**: Use `mcp__tflo__list_projects` with the organization_id
-3. **Select Project**: Use `mcp__tflo__select_project` with the matching project_id
-4. **Identify Repository**: Use `mcp__tflo__list_repositories` to confirm repo linkage
+1. **List Projects**: Use `mcp__tflo__list_projects` to find the relevant project
+2. **Select Project**: Use `mcp__tflo__select_project` with the matching project_id
+3. **Identify Repository**: Use `mcp__tflo__list_repositories` to get repository_id
 
-#### Step 1.3: Gather All Artifacts
+#### Step 1.3: Check Previous Audits (Optional)
+
+Check for prior audit trends before starting:
+```
+Use: mcp__tflo__list_governance_audits with repository_id
+Use: mcp__tflo__get_repeat_violations with repository_id to identify recurring issues
+```
+
+#### Step 1.4: Create Governance Audit
+
+Create a new audit record to track findings:
+```
+Use: mcp__tflo__create_audit with:
+  - repository_id: UUID of the repository
+  - executed_by: "deep-review-skill"
+```
+
+Save the returned `audit_id` for recording findings.
+
+#### Step 1.5: Gather All Artifacts
 
 Collect these in parallel:
 
@@ -75,12 +95,28 @@ For each active guardrail, analyze the codebase for compliance:
 | Architecture | Layer boundaries, dependency directions, pattern adherence |
 | Business | Domain logic placement, business rule implementation |
 
-Document each violation with:
-- Guardrail reference (ID and title)
-- Specific code location (file:line)
-- Nature of violation
-- Severity (critical/major/minor)
-- Recommended remediation
+**Record each violation immediately using batch recording:**
+```
+Use: mcp__tflo__record_findings_batch with:
+  - audit_id: UUID from Step 1.4
+  - findings: [
+      {
+        "finding_id": "V-001",  # Sequential within audit
+        "category": "guardrail_violation",
+        "severity": "critical|major|minor",
+        "description": "Description of the violation",
+        "guardrail_id": "GUARD-XXX-NNN",  # HRID of violated guardrail
+        "location": {"file": "path/to/file.py", "start_line": 42, "end_line": 45},
+        "remediation": "How to fix"
+      },
+      ...
+    ]
+```
+
+Finding categories:
+- `guardrail_violation` - Code violates a guardrail
+- `requirement_gap` - Requirement not implemented
+- `work_item_drift` - Implementation differs from work item intent
 
 #### Step 2.3: Requirements Traceability
 
@@ -106,15 +142,42 @@ For each work item (CR, bug, debt):
 3. **Check Dependencies**: Verify blocked_by relationships are resolved
 4. **Assess Technical Debt**: For debt items, evaluate current state
 
-### Phase 3: Gap Analysis Report
+### Phase 3: Complete Audit in TarkaFlow
 
-#### Step 3.1: Create Report Structure
+#### Step 3.1: Complete the Governance Audit
+
+After recording all findings, complete the audit:
+```
+Use: mcp__tflo__complete_audit with:
+  - audit_id: UUID from Step 1.4
+  - guardrails_analyzed: Total number of guardrails checked
+  - violations_found: Total findings recorded
+  - critical_count: Count of critical severity findings
+  - major_count: Count of major severity findings
+  - minor_count: Count of minor severity findings
+```
+
+#### Step 3.2: Auto-Remediation (Optional)
+
+Generate work items from critical/major findings:
+```
+Use: mcp__tflo__action_audit with:
+  - audit_id: UUID from Step 1.4
+  - limit: 3  # Top 3 findings by severity
+  - preview: true  # First preview candidates
+```
+
+If preview looks good, run again with `preview: false` to create work items.
+
+### Phase 4: Generate Report
+
+#### Step 4.1: Create Report Structure
 
 Create the report at `{repo_root}/docs/DEEP-REVIEW-{PROJECT_SLUG}-{YYYY-MM-DD}.md`
 
-Where `{PROJECT_SLUG}` is the TarkaFlow project slug (e.g., TFLO, AOS, PLAT, INFRA) obtained from the project selected in Step 1.3.
+Where `{PROJECT_SLUG}` is the TarkaFlow project slug (e.g., TFLO, AOS, PLAT, INFRA).
 
-#### Step 3.2: Report Template
+#### Step 4.2: Report Template
 
 ```markdown
 # Deep Review Report
@@ -212,13 +275,31 @@ Full hierarchy of requirements analyzed.
 Complete list of work items checked.
 ```
 
-### Phase 4: Finalize
+### Phase 5: Finalize
 
 1. **Write Report**: Save the completed report to `/docs/DEEP-REVIEW-{PROJECT_SLUG}-{YYYY-MM-DD}.md`
 2. **Summarize**: Provide a brief verbal summary of key findings
-3. **Recommend Next Steps**: Suggest immediate actions based on critical findings
+3. **Reference TarkaFlow**: Include the audit HRID in the summary for traceability
+4. **Recommend Next Steps**:
+   - For critical findings: suggest running `action_audit` to create work items
+   - For trending issues: reference `get_repeat_violations` output
+   - For follow-up: note that findings are queryable via `list_audit_findings`
 
 ## Additional Resources
+
+### TarkaFlow Governance Audit Tools
+
+| Tool | Purpose |
+|------|---------|
+| `create_audit` | Start a new governance audit |
+| `record_finding` | Record a single finding |
+| `record_findings_batch` | Record multiple findings atomically |
+| `complete_audit` | Finalize audit with counts |
+| `list_governance_audits` | Query previous audits |
+| `list_audit_findings` | Query findings across audits |
+| `get_audit_trends` | Monthly violation time series |
+| `get_repeat_violations` | Identify recurring issues |
+| `action_audit` | Auto-generate work items from findings |
 
 ### Reference Files
 
