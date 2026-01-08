@@ -1,0 +1,3 @@
+#!/bin/bash
+# code - Code directory tmux session
+cd ~/Code && exec tmux new -As code

@@ -1,3 +1,0 @@
-#!/bin/bash
-# tag - Tarka N8N Agents tmux session
-cd ~/Code/tarka-n8n-agents && exec tmux new -As tag

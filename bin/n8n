@@ -1,3 +1,0 @@
-#!/bin/bash
-# n8n - Originate Deploy N8N tmux session
-cd ~/Code/originate-deploy-n8n && exec tmux new -As n8n
