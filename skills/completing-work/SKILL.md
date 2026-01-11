@@ -34,10 +34,70 @@ get_work_item(work_item_id='<CR-ID>')
 
 Confirm status is `in_progress`. If not, this skill was invoked out of order.
 
+## Step 2: Verify Test Structure (GUARD-ARCH-015)
+
+Before proceeding, verify the repository has proper test structure per GUARD-ARCH-015.
+
+### 2a. Verify Unit Tests Exist
+
+Check that unit tests exist in `tests/unit/`:
+
+```bash
+ls tests/unit/test_*.py 2>/dev/null || ls tests/unit/**/test_*.py 2>/dev/null
+```
+
+**BLOCKING if no unit tests found.** Every implementation must have unit tests.
+
+### 2b. Verify Integration Tests Exist
+
+Check that integration tests exist in `tests/integration/`:
+
+```bash
+ls tests/integration/test_*.py 2>/dev/null || ls tests/integration/**/test_*.py 2>/dev/null
+```
+
+**BLOCKING if no integration tests found.** Integration tests are required for SIT validation during RELEASE phase.
+
+### 2c. Verify Integration Tests Use Environment Variables
+
+Integration tests must NOT hardcode localhost URLs. Check for violations:
+
+```bash
+grep -r "localhost" tests/integration/ --include="*.py" | grep -v "^#" | grep -v "conftest" || echo "No hardcoded localhost found"
+grep -r "127\.0\.0\.1" tests/integration/ --include="*.py" | grep -v "^#" || echo "No hardcoded 127.0.0.1 found"
+```
+
+If hardcoded URLs are found, **BLOCKING**. Integration tests must use environment variables:
+- `SIT_API_URL` for API endpoints
+- `SIT_DATABASE_URL` for database connections
+- Other `SIT_*` variables as appropriate
+
+Example of correct pattern in `tests/integration/conftest.py`:
+
+```python
+import os
+import pytest
+
+@pytest.fixture
+def api_base_url():
+    return os.environ.get("SIT_API_URL", "http://localhost:8000")
+```
+
+### 2d. Run All Tests
+
+Verify all tests pass before proceeding:
+
+```bash
+pytest tests/ -v
+```
+
+**BLOCKING if any tests fail.**
+
 ## Completion Checklist
 
 Before transitioning to `implemented`, ALL of the following must be done:
 
+- [ ] Test structure verified (GUARD-ARCH-015)
 - [ ] Implementation notes (imp) created
 - [ ] LDM updated (if data model changed)
 - [ ] Interface specs updated (if APIs changed)
@@ -45,7 +105,7 @@ Before transitioning to `implemented`, ALL of the following must be done:
 - [ ] All tests passing
 - [ ] Work item updated with implementation refs
 
-## Step 2: Create Implementation Notes
+## Step 3: Create Implementation Notes
 
 For each affected requirement, create an `imp` artifact documenting key decisions:
 
@@ -98,7 +158,7 @@ Used JWT tokens with refresh token rotation for session management.
 - Token revocation requires Redis (not implemented, see PROJ-FEAT-089)
 ```
 
-## Step 3: Update LDM (If Data Model Changed)
+## Step 4: Update LDM (If Data Model Changed)
 
 If you added or modified data structures:
 
@@ -126,7 +186,7 @@ update_requirement(requirement_id='<LDM-ID>', content='...')
 - Relationships between entities
 - Validation rules
 
-## Step 4: Update Interfaces (If APIs Changed)
+## Step 5: Update Interfaces (If APIs Changed)
 
 If you added or modified APIs:
 
@@ -148,7 +208,7 @@ create_requirement(content='...', type='interface', project_id='<project>')
 - Error responses
 - Rate limits
 
-## Step 5: Add Semantic Tags
+## Step 6: Add Semantic Tags
 
 Update affected requirements with relationship tags:
 
@@ -166,7 +226,7 @@ get_requirement(requirement_id='<REQ-ID>')
 update_requirement(requirement_id='<REQ-ID>', content='<updated content with tags>')
 ```
 
-## Step 6: Update Work Item with Implementation Refs
+## Step 7: Update Work Item with Implementation Refs
 
 ```
 update_work_item(
@@ -179,7 +239,7 @@ update_work_item(
 )
 ```
 
-## Step 7: Final Verification
+## Step 8: Final Verification
 
 Run full test suite one more time:
 ```bash
@@ -194,7 +254,7 @@ go test ./...
 - Linting passes
 - Type checking passes (if applicable)
 
-## Step 8: Transition to Implemented
+## Step 9: Transition to Implemented
 
 Only after ALL checklist items are complete:
 
@@ -225,6 +285,10 @@ All tests passing
 
 ## Blocking (STOP)
 
+- **No unit tests** - `tests/unit/` directory missing or empty
+- **No integration tests** - `tests/integration/` directory missing or empty
+- **Hardcoded URLs in integration tests** - Must use `SIT_*` environment variables
+- **Tests failing** - All tests must pass before completion
 - Tests now failing (regression introduced)
 - Cannot determine what was implemented (shouldn't happen)
 - MCP tools failing repeatedly
