@@ -2,4 +2,4 @@
 # Claude Code - Skip Permissions
 # Starts Claude without permission prompts
 clear
-exec /usr/bin/claude --dangerously-skip-permissions "$@"
+exec /home/wkenn/.local/bin/claude --dangerously-skip-permissions "$@"
